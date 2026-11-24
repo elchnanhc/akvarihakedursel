@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>אקווריום הכדורסל — מדד התחרותיות והפרשי הניצחון בעשור האחרון (16/17–*26/27)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Heebo', sans-serif; background-color: #f8fafc; color: #0f172a; }
+    .tab-btn.active { background-color: #0f172a; color: #ffffff; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15); }
+    .league-chip { transition: all 0.18s ease; }
+    .league-chip.selected { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+    .sortable-th { cursor: pointer; user-select: none; }
+    .sortable-th:hover { background-color: #f1f5f9; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-amber-500 text-slate-950 font-black text-lg shadow">🏀</span>
+          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">אקווריום הכדורסל — מדד התחרותיות הבינלאומי</h1>
+        </div>
+        <p class="text-slate-400 text-xs sm:text-sm mt-1">
+          ניתוח הפרשי ניצחון (Margin of Victory) ב-<span id="headerLeagueCount">12</span> ליגות מובילות לאורך 11 עונות (16/17 – *26/27) • מתעדכן אוטומטית
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700/80 px-3 py-1.5 rounded-lg text-xs sm:text-sm cursor-pointer border border-slate-700">
+          <input type="checkbox" id="excludePartialSeason" class="rounded text-amber-500 focus:ring-amber-500" />
+          <span>עונות מלאות בלבד (16/17–25/26)</span>
+        </label>
+        <button onclick="exportAllCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-lg shadow transition">
+          ייצוא CSV מלא
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Loading Banner -->
+  <div id="loadingBanner" class="bg-amber-50 border-b border-amber-200 text-amber-900 text-center py-2 text-sm font-medium">
+    טוען נתונים עדכניים מתוך data.json...
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-6">
+
+    <!-- KPI Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpiGrid"></section>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-1.5">
+      <button class="tab-btn active flex-1 min-w-[140px] py-2.5 px-4 rounded-xl text-sm font-bold transition" data-tab="overview">
+        🏆 דירוג תחרותיות כללי
+      </button>
+      <button class="tab-btn flex-1 min-w-[140px] py-2.5 px-4 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition" data-tab="trends">
+        📈 השוואת מגמות רב-ליגתית
+      </button>
+      <button class="tab-btn flex-1 min-w-[140px] py-2.5 px-4 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition" data-tab="league">
+        🔍 ניתוח עומק לפי ליגה
+      </button>
+    </nav>
+
+    <!-- TAB 1: Overview & Ranking -->
+    <section id="tab-overview" class="tab-panel space-y-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">הפרש ניצחון ממוצע לפי ליגה (ממוצע רב-עונתי)</h2>
+            <p class="text-xs text-slate-500">ככל שהעמודה קצרה יותר, הליגה צמודה ותחרותית יותר</p>
+          </div>
+        </div>
+        <div class="h-80">
+          <canvas id="rankingBarChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">טבלת דירוג התחרותיות המלאה</h2>
+            <p class="text-xs text-slate-500">לחץ על כותרת כל עמודה כדי למיין את הליגות</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-right">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-xs">
+              <tr>
+                <th class="py-3 px-4">#</th>
+                <th class="py-3 px-4 sortable-th" onclick="sortTable('league')">ליגה ⇅</th>
+                <th class="py-3 px-4 sortable-th" onclick="sortTable('games')">משחקים ⇅</th>
+                <th class="py-3 px-4 sortable-th" onclick="sortTable('avg')">הפרש ממוצע ⇅</th>
+                <th class="py-3 px-4 sortable-th" onclick="sortTable('pct5')">עד 5 נק' (%) ⇅</th>
+                <th class="py-3 px-4 sortable-th" onclick="sortTable('pct10')">עד 10 נק' (%) ⇅</th>
+                <th class="py-3 px-4 sortable-th" onclick="sortTable('pct20')">תבוסות 20+ (%) ⇅</th>
+                <th class="py-3 px-4 sortable-th" onclick="sortTable('delta')">שינוי מתחילת העשור ⇅</th>
+              </tr>
+            </thead>
+            <tbody id="rankingTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Multi-League Trends -->
+    <section id="tab-trends" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">מגמת הפרש ממוצע לאורך 11 עונות</h2>
+            <p class="text-xs text-slate-500">סמן או בטל ליגות כדי להשוות ביניהן על ציר הזמן</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="applyPreset('il_el')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-3 py-1.5 rounded-lg">ישראל מול יורוליג</button>
+            <button onclick="applyPreset('il_nba_el')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-3 py-1.5 rounded-lg">ישראל, NBA ויורוליג</button>
+            <button onclick="applyPreset('top5')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-3 py-1.5 rounded-lg">5 הליגות המקומיות הבכירות</button>
+            <button onclick="applyPreset('all')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-3 py-1.5 rounded-lg">הצג הכול</button>
+          </div>
+        </div>
+
+        <div id="leagueChipsContainer" class="flex flex-wrap gap-2"></div>
+
+        <div class="h-96">
+          <canvas id="trendsLineChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <h2 class="text-lg font-extrabold text-slate-900 mb-1">מאזן דרמה מול חד-צדדיות (%)</h2>
+        <p class="text-xs text-slate-500 mb-4">השוואה בין אחוז המשחקים הצמודים (עד 10 נק') לאחוז התבוסות (20+ נק')</p>
+        <div class="h-80">
+          <canvas id="dramaVsBlowoutChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Deep Dive per League -->
+    <section id="tab-league" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <label for="leagueSelect" class="font-bold text-slate-700 text-sm">בחר ליגה לניתוח:</label>
+          <select id="leagueSelect" onchange="renderSingleLeague()" class="bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 font-bold text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
+        </div>
+        <button onclick="exportSingleLeagueCSV()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
+          הורד CSV לליגה זו
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4" id="singleLeagueKpis"></div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <h3 class="text-base font-extrabold text-slate-900 mb-1">התפלגות הפרשי הניצחון לפי עונה (%)</h3>
+        <p class="text-xs text-slate-500 mb-4">חלוקה ל-4 מדרגות הפרש: דרמה (עד 5), צמוד (6–10), נוח (11–19) ותבוסה (20+)</p>
+        <div class="h-80">
+          <canvas id="singleLeagueDistChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-right">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-xs">
+              <tr>
+                <th class="py-3 px-4">עונה</th>
+                <th class="py-3 px-4">משחקים</th>
+                <th class="py-3 px-4">הפרש ממוצע</th>
+                <th class="py-3 px-4">עד 5 נק'</th>
+                <th class="py-3 px-4">6–10 נק'</th>
+                <th class="py-3 px-4">11–19 נק'</th>
+                <th class="py-3 px-4">20+ נק'</th>
+                <th class="py-3 px-4">סה"כ עד 10 נק' (%)</th>
+              </tr>
+            </thead>
+            <tbody id="singleLeagueTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-10">
+    אקווריום הכדורסל • נתונים מתעדכנים אוטומטית מתוך Proballers • מבוסס על הפרש ניצחון מוחלט בכל משחקי הליגה
+  </footer>
+
+  <script>
+    const PALETTE = [
+      '#2563eb', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444',
+      '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1',
+      '#84cc16', '#0ea5e9', '#d946ef', '#64748b'
+    ];
+
+    let RAW_DATA = [];
+    let selectedLeagueIds = new Set(['israel', 'euroleague', 'nba', 'spain']);
+    let sortKey = 'avg';
+    let sortAsc = true;
+    let charts = {};
+
+    async function init() {
+      try {
+        const res = await fetch('./data.json?t=' + Date.now());
+        RAW_DATA = await res.json();
+        RAW_DATA.forEach((lg, idx) => {
+          lg.color = PALETTE[idx % PALETTE.length];
+        });
+        document.getElementById('loadingBanner').classList.add('hidden');
+        document.getElementById('headerLeagueCount').textContent = RAW_DATA.length;
+
+        // Ensure default selected leagues exist
+        const availableIds = new Set(RAW_DATA.map(l => l.id));
+        selectedLeagueIds = new Set([...selectedLeagueIds].filter(id => availableIds.has(id)));
+        if (selectedLeagueIds.size === 0 && RAW_DATA.length > 0) {
+          RAW_DATA.slice(0, 4).forEach(l => selectedLeagueIds.add(l.id));
+        }
+
+        populateSelect();
+        renderChips();
+        renderAll();
+      } catch (err) {
+        document.getElementById('loadingBanner').textContent = 'שגיאה בטעינת קובץ הנתונים data.json. ודא שהקובץ קיים באותה תיקייה.';
+        console.error(err);
+      }
+    }
+
+    function getFilteredSeasons(seasons) {
+      const excludePartial = document.getElementById('excludePartialSeason').checked;
+      return excludePartial ? seasons.filter(s => !s.season.startsWith('*')) : seasons;
+    }
+
+    function computeSummaries() {
+      return RAW_DATA.map(lg => {
+        const seasons = getFilteredSeasons(lg.seasons);
+        const totalGames = seasons.reduce((a, s) => a + s.games, 0);
+        const weightedAvg = totalGames > 0
+          ? seasons.reduce((a, s) => a + s.avg * s.games, 0) / totalGames
+          : 0;
+        const u5 = seasons.reduce((a, s) => a + s.u5, 0);
+        const u10 = seasons.reduce((a, s) => a + s.u10, 0);
+        const p20 = seasons.reduce((a, s) => a + s.p20, 0);
+        const firstAvg = seasons[0]?.avg || 0;
+        const lastAvg = seasons[seasons.length - 1]?.avg || 0;
+        const delta = firstAvg > 0 ? ((lastAvg - firstAvg) / firstAvg) * 100 : 0;
+
+        return {
+          id: lg.id,
+          league: lg.league,
+          color: lg.color,
+          games: totalGames,
+          avg: Number(weightedAvg.toFixed(2)),
+          pct5: totalGames ? Number(((u5 / totalGames) * 100).toFixed(1)) : 0,
+          pct10: totalGames ? Number(((u10 / totalGames) * 100).toFixed(1)) : 0,
+          pct20: totalGames ? Number(((p20 / totalGames) * 100).toFixed(1)) : 0,
+          delta: Number(delta.toFixed(1)),
+          seasons
+        };
+      });
+    }
+
+    function renderAll() {
+      const summaries = computeSummaries();
+      renderKPIs(summaries);
+      renderRankingTable(summaries);
+      renderRankingBar(summaries);
+      renderTrendsChart();
+      renderDramaChart(summaries);
+      renderSingleLeague();
+    }
+
+    function renderKPIs(summaries) {
+      const sorted = [...summaries].sort((a, b) => a.avg - b.avg);
+      const tightest = sorted[0];
+      const widest = sorted[sorted.length - 1];
+      const totalGames = summaries.reduce((a, s) => a + s.games, 0);
+      const israel = summaries.find(s => s.id === 'israel') || sorted[0];
+
+      const cards = [
+        { title: 'הליגה הצמודה ביותר', val: tightest.league, sub: `ממוצע ${tightest.avg} נק' (${tightest.pct10}% עד 10 נק')`, badge: 'שיא תחרותיות', color: 'emerald' },
+        { title: 'הפערים הגבוהים ביותר', val: widest.league, sub: `ממוצע ${widest.avg} נק' (${widest.pct20}% תבוסות 20+)`, badge: 'דומיננטיות צמרת', color: 'rose' },
+        { title: `מגמה: ${israel.league}`, val: `${israel.delta > 0 ? '+' : ''}${israel.delta}%`, sub: `ממוצע רב-עונתי: ${israel.avg} נק'`, badge: 'שינוי בעשור', color: 'amber' },
+        { title: 'סה"כ משחקים שנותחו', val: totalGames.toLocaleString(), sub: `על פני ${summaries.length} ליגות ו-11 עונות`, badge: 'מאגר חי', color: 'blue' }
+      ];
+
+      document.getElementById('kpiGrid').innerHTML = cards.map(c => `
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-500">${c.title}</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-${c.color}-50 text-${c.color}-700">${c.badge}</span>
+          </div>
+          <div class="text-xl font-black text-slate-900 truncate">${c.val}</div>
+          <div class="text-xs text-slate-500 mt-1">${c.sub}</div>
+        </div>
+      `).join('');
+    }
+
+    function sortTable(key) {
+      if (sortKey === key) sortAsc = !sortAsc;
+      else { sortKey = key; sortAsc = key === 'avg' || key === 'pct20' || key === 'delta'; }
+      renderRankingTable(computeSummaries());
+    }
+
+    function renderRankingTable(summaries) {
+      const sorted = [...summaries].sort((a, b) => {
+        const v1 = a[sortKey], v2 = b[sortKey];
+        if (typeof v1 === 'string') return sortAsc ? v1.localeCompare(v2) : v2.localeCompare(v1);
+        return sortAsc ? v1 - v2 : v2 - v1;
+      });
+
+      document.getElementById('rankingTableBody').innerHTML = sorted.map((s, i) => `
+        <tr class="hover:bg-slate-50 transition ${s.id === 'israel' ? 'bg-amber-50/40 font-semibold' : ''}">
+          <td class="py-3 px-4 font-bold text-slate-400">${i + 1}</td>
+          <td class="py-3 px-4 font-bold text-slate-900 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${s.color}"></span>
+            ${s.league}
+          </td>
+          <td class="py-3 px-4 text-slate-600">${s.games.toLocaleString()}</td>
+          <td class="py-3 px-4 font-extrabold text-slate-900">${s.avg}</td>
+          <td class="py-3 px-4 text-emerald-700 font-semibold">${s.pct5}%</td>
+          <td class="py-3 px-4 text-blue-700 font-semibold">${s.pct10}%</td>
+          <td class="py-3 px-4 text-rose-700 font-semibold">${s.pct20}%</td>
+          <td class="py-3 px-4 font-bold ${s.delta > 0 ? 'text-rose-600' : 'text-emerald-600'}">
+            ${s.delta > 0 ? '+' : ''}${s.delta}%
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRankingBar(summaries) {
+      const sorted = [...summaries].sort((a, b) => a.avg - b.avg);
+      if (charts.rankingBar) charts.rankingBar.destroy();
+      charts.rankingBar = new Chart(document.getElementById('rankingBarChart'), {
+        type: 'bar',
+        data: {
+          labels: sorted.map(s => s.league),
+          datasets: [{
+            label: 'הפרש ניצחון ממוצע',
+            data: sorted.map(s => s.avg),
+            backgroundColor: sorted.map(s => s.color),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { min: 8, title: { display: true, text: 'נקודות הפרש בממוצע' } } }
+        }
+      });
+    }
+
+    function renderChips() {
+      const container = document.getElementById('leagueChipsContainer');
+      container.innerHTML = RAW_DATA.map(lg => {
+        const active = selectedLeagueIds.has(lg.id);
+        return `
+          <button onclick="toggleLeagueChip('${lg.id}')"
+            class="league-chip px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 ${active ? 'selected bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}">
+            <span class="w-2.5 h-2.5 rounded-full" style="background:${lg.color}"></span>
+            ${lg.league}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function toggleLeagueChip(id) {
+      if (selectedLeagueIds.has(id)) {
+        if (selectedLeagueIds.size > 1) selectedLeagueIds.delete(id);
+      } else {
+        selectedLeagueIds.add(id);
+      }
+      renderChips();
+      renderTrendsChart();
+    }
+
+    function applyPreset(type) {
+      const allIds = RAW_DATA.map(l => l.id);
+      if (type === 'il_el') selectedLeagueIds = new Set(['israel', 'euroleague'].filter(id => allIds.includes(id)));
+      else if (type === 'il_nba_el') selectedLeagueIds = new Set(['israel', 'nba', 'euroleague'].filter(id => allIds.includes(id)));
+      else if (type === 'top5') selectedLeagueIds = new Set(['spain', 'turkey', 'italy', 'france', 'greece'].filter(id => allIds.includes(id)));
+      else selectedLeagueIds = new Set(allIds);
+      renderChips();
+      renderTrendsChart();
+    }
+
+    function renderTrendsChart() {
+      const allSeasonLabels = ["16/17", "17/18", "18/19", "19/20", "20/21", "21/22", "22/23", "23/24", "24/25", "25/26", "*26/27"];
+      const excludePartial = document.getElementById('excludePartialSeason').checked;
+      const labels = excludePartial ? allSeasonLabels.filter(s => !s.startsWith('*')) : allSeasonLabels;
+
+      const datasets = RAW_DATA.filter(lg => selectedLeagueIds.has(lg.id)).map(lg => {
+        const map = Object.fromEntries(lg.seasons.map(s => [s.season, s.avg]));
+        return {
+          label: lg.league,
+          data: labels.map(l => map[l] ?? null),
+          borderColor: lg.color,
+          backgroundColor: lg.color,
+          borderWidth: lg.id === 'israel' ? 4 : 2.5,
+          tension: 0.25,
+          pointRadius: 4
+        };
+      });
+
+      if (charts.trends) charts.trends.destroy();
+      charts.trends = new Chart(document.getElementById('trendsLineChart'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: { y: { title: { display: true, text: 'הפרש ניצחון ממוצע' } } }
+        }
+      });
+    }
+
+    function renderDramaChart(summaries) {
+      const sorted = [...summaries].sort((a, b) => b.pct10 - a.pct10);
+      if (charts.drama) charts.drama.destroy();
+      charts.drama = new Chart(document.getElementById('dramaVsBlowoutChart'), {
+        type: 'bar',
+        data: {
+          labels: sorted.map(s => s.league),
+          datasets: [
+            { label: 'משחקים צמודים (עד 10 נק׳ %)', data: sorted.map(s => s.pct10), backgroundColor: '#10b981', borderRadius: 4 },
+            { label: 'תבוסות (20+ נק׳ %)', data: sorted.map(s => s.pct20), backgroundColor: '#ef4444', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, max: 75 } }
+        }
+      });
+    }
+
+    function populateSelect() {
+      const sel = document.getElementById('leagueSelect');
+      sel.innerHTML = RAW_DATA.map(lg => `<option value="${lg.id}">${lg.league}</option>`).join('');
+    }
+
+    function renderSingleLeague() {
+      const id = document.getElementById('leagueSelect').value;
+      const lg = RAW_DATA.find(l => l.id === id) || RAW_DATA[0];
+      if (!lg) return;
+
+      const seasons = getFilteredSeasons(lg.seasons);
+      const totalGames = seasons.reduce((a, s) => a + s.games, 0);
+      const avg = totalGames ? (seasons.reduce((a, s) => a + s.avg * s.games, 0) / totalGames).toFixed(2) : 0;
+      const u10Pct = totalGames ? ((seasons.reduce((a, s) => a + s.u10, 0) / totalGames) * 100).toFixed(1) : 0;
+      const p20Pct = totalGames ? ((seasons.reduce((a, s) => a + s.p20, 0) / totalGames) * 100).toFixed(1) : 0;
+
+      document.getElementById('singleLeagueKpis').innerHTML = `
+        <div class="bg-white p-4 rounded-xl border border-slate-200"><div class="text-xs text-slate-500">משחקים בתקופה</div><div class="text-2xl font-black mt-1">${totalGames.toLocaleString()}</div></div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200"><div class="text-xs text-slate-500">הפרש ממוצע משוקלל</div><div class="text-2xl font-black mt-1">${avg} נק'</div></div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200"><div class="text-xs text-slate-500">משחקים צמודים (עד 10)</div><div class="text-2xl font-black text-emerald-600 mt-1">${u10Pct}%</div></div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200"><div class="text-xs text-slate-500">תבוסות (20+ נק')</div><div class="text-2xl font-black text-rose-600 mt-1">${p20Pct}%</div></div>
+      `;
+
+      document.getElementById('singleLeagueTableBody').innerHTML = seasons.map(s => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2.5 px-4 font-bold">${s.season}</td>
+          <td class="py-2.5 px-4">${s.games}</td>
+          <td class="py-2.5 px-4 font-extrabold">${s.avg}</td>
+          <td class="py-2.5 px-4">${s.u5} (${((s.u5/s.games)*100).toFixed(1)}%)</td>
+          <td class="py-2.5 px-4">${s.b6_10} (${((s.b6_10/s.games)*100).toFixed(1)}%)</td>
+          <td class="py-2.5 px-4">${s.b11_19} (${((s.b11_19/s.games)*100).toFixed(1)}%)</td>
+          <td class="py-2.5 px-4">${s.p20} (${((s.p20/s.games)*100).toFixed(1)}%)</td>
+          <td class="py-2.5 px-4 font-bold text-blue-700">${s.u10} (${((s.u10/s.games)*100).toFixed(1)}%)</td>
+        </tr>
+      `).join('');
+
+      if (charts.singleDist) charts.singleDist.destroy();
+      charts.singleDist = new Chart(document.getElementById('singleLeagueDistChart'), {
+        type: 'bar',
+        data: {
+          labels: seasons.map(s => s.season),
+          datasets: [
+            { label: 'עד 5 נק׳', data: seasons.map(s => Number(((s.u5/s.games)*100).toFixed(1))), backgroundColor: '#10b981' },
+            { label: '6–10 נק׳', data: seasons.map(s => Number(((s.b6_10/s.games)*100).toFixed(1))), backgroundColor: '#3b82f6' },
+            { label: '11–19 נק׳', data: seasons.map(s => Number(((s.b11_19/s.games)*100).toFixed(1))), backgroundColor: '#f59e0b' },
+            { label: '20+ נק׳', data: seasons.map(s => Number(((s.p20/s.games)*100).toFixed(1))), backgroundColor: '#ef4444' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { x: { stacked: true }, y: { stacked: true, max: 100 } }
+        }
+      });
+    }
+
+    function downloadCSV(filename, rows) {
+      const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+
+    function exportAllCSV() {
+      const rows = [['League', 'Season', 'Games', 'Avg_Margin', 'Under_5', '6_to_10', '11_to_19', '20_Plus', 'Under_10']];
+      RAW_DATA.forEach(lg => {
+        lg.seasons.forEach(s => rows.push([`"${lg.league}"`, s.season, s.games, s.avg, s.u5, s.b6_10, s.b11_19, s.p20, s.u10]));
+      });
+      downloadCSV('basketball_margins_all_leagues.csv', rows);
+    }
+
+    function exportSingleLeagueCSV() {
+      const id = document.getElementById('leagueSelect').value;
+      const lg = RAW_DATA.find(l => l.id === id);
+      if (!lg) return;
+      const rows = [['League', 'Season', 'Games', 'Avg_Margin', 'Under_5', '6_to_10', '11_to_19', '20_Plus', 'Under_10']];
+      lg.seasons.forEach(s => rows.push([`"${lg.league}"`, s.season, s.games, s.avg, s.u5, s.b6_10, s.b11_19, s.p20, s.u10]));
+      downloadCSV(`${lg.id}_margins.csv`, rows);
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('active');
+          b.classList.add('text-slate-600');
+        });
+        btn.classList.add('active');
+        btn.classList.remove('text-slate-600');
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+      });
+    });
+
+    document.getElementById('excludePartialSeason').addEventListener('change', renderAll);
+    init();
+  </script>
+</body>
+</html>
