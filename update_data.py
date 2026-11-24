@@ -105,6 +105,9 @@ def main():
 
         output.append({"id": lg["id"], "league": lg["name"], "seasons": updated_seasons})
 
+    if "israel" in existing:
+        output.insert(0, existing["israel"])
+
     with open("data.json", "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
