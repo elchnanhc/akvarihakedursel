@@ -353,7 +353,7 @@
         RAW_DATA = await res.json();
         RAW_DATA.forEach((lg, idx) => {
           const meta = LEAGUE_META[lg.id] || { flag: '', color: FALLBACK_COLORS[idx % FALLBACK_COLORS.length] };
-          lg.displayName = meta.flag ? `${meta.flag}${lg.league}` : lg.league;
+          lg.displayName = meta.flag ? `${meta.flag} ${lg.league}` : lg.league;
           lg.color = meta.color;
         });
 
@@ -486,7 +486,8 @@
       const cards = [
         { title: 'הליגה הצמודה ביותר', val: tightest.displayName, sub: `ממוצע ${tightest.avg} נק' (יחס ${tightest.ratio}:1 צמוד/תבוסה)`, tag: 'הגיל ברקיה', tagCls: 'bg-emerald-100 text-emerald-900' },
         { title: 'הפערים הגבוהים ביותר', val: widest.displayName, sub: `ממוצע ${widest.avg} נק' (${widest.pct20}% תבוסות 20+)`, tag: 'טרחות בע"מ', tagCls: 'bg-rose-100 text-rose-900' },
-        { title: 'ליגת העל הישראלית', val: `${israel.avg} נק' בממוצע`, sub: `שינוי: ${israel.deltaPts > 0 ? '+' : ''}${israel.deltaPts} נק' (${israel.delta > 0 ? '+' : ''}${israel.delta}\%)`, tag: '🇮🇱 ישראל', tagCls: 'bg-amber-200/80 text-stone-900' }, { title: 'סה"כ משחקים שנותחו', val: totalGames.toLocaleString(), sub: `ב-${summaries.length} ליגות על פני 11 עונות`, tag: 'מאגר מלא', tagCls: 'bg-stone-200 text-stone-900' }
+        { title: 'ליגת העל הישראלית', val: `${israel.avg} נק' בממוצע`, sub: `שינוי: ${israel.deltaPts > 0 ? '+' : ''}${israel.deltaPts} נק' (${israel.delta > 0 ? '+' : ''}${israel.delta}%)`, tag: '🇮🇱 ישראל', tagCls: 'bg-amber-200/80 text-stone-900' },
+        { title: 'סה"כ משחקים שנותחו', val: totalGames.toLocaleString(), sub: `ב-${summaries.length} ליגות על פני 11 עונות`, tag: 'מאגר מלא', tagCls: 'bg-stone-200 text-stone-900' }
       ];
 
       document.getElementById('kpiGrid').innerHTML = cards.map(c => `
@@ -629,7 +630,7 @@
           <td class="py-3.5 px-4 text-rose-800 font-bold">${s.maxSeason.season} (${s.maxSeason.avg})</td>
           <td class="py-3.5 px-4 font-extrabold text-stone-800">${s.swing} נק'</td>
           <td class="py-3.5 px-4 font-extrabold ${s.eraDiffPct > 0 ? 'text-rose-700' : 'text-emerald-700'}">
-            ${s.earlyAvg} ←${s.lateAvg} (${s.eraDiffPct > 0 ? '+' : ''}${s.eraDiffPct}%)
+            ${s.earlyAvg} ← ${s.lateAvg} (${s.eraDiffPct > 0 ? '+' : ''}${s.eraDiffPct}%)
           </td>
           <td class="py-3.5 px-4 font-extrabold ${s.currDiff > 0 ? 'text-rose-700' : 'text-emerald-700'}">
             ${s.currAvg !== null ? `${s.currAvg} (${s.currDiff > 0 ? '+' : ''}${s.currDiff})` : '-'}
@@ -812,3 +813,49 @@
             <span>${n.author}</span>
             <span>${n.date}</span>
           </div>
+          <div class="font-extrabold text-stone-950 text-sm">${n.title}</div>
+          <p class="text-xs text-stone-800 mt-1">${n.body}</p>
+        </div>
+      `).join('');
+    }
+
+    function downloadCSV(filename, rows) {
+      const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+
+    function exportAllCSV() {
+      const rows = [['League', 'Season', 'Games', 'Avg_Margin', 'Under_5', '6_to_10', '11_to_19', '20_Plus', 'Under_10']];
+      RAW_DATA.forEach(lg => (lg.seasons || []).forEach(s => rows.push([`"${lg.league}"`, s.season, s.games, s.avg, s.u5, s.b6_10, s.b11_19, s.p20, s.u10])));
+      downloadCSV('maorat_haakbarim_margins.csv', rows);
+    }
+
+    function exportSingleLeagueCSV() {
+      const id = document.getElementById('leagueSelect').value;
+      const lg = RAW_DATA.find(l => l.id === id);
+      if (!lg) return;
+      const rows = [['League', 'Season', 'Games', 'Avg_Margin', 'Under_5', '6_to_10', '11_to_19', '20_Plus', 'Under_10']];
+      (lg.seasons || []).forEach(s => rows.push([`"${lg.league}"`, s.season, s.games, s.avg, s.u5, s.b6_10, s.b11_19, s.p20, s.u10]));
+      downloadCSV(`${lg.id}_margins.csv`, rows);
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        const panel = document.getElementById('tab-' + btn.dataset.tab);
+        if (panel) panel.classList.remove('hidden');
+        Object.values(charts).forEach(ch => ch && ch.resize && ch.resize());
+      });
+    });
+
+    document.getElementById('excludePartialSeason').addEventListener('change', renderAll);
+    init();
+  </script>
+</body>
+</html>
