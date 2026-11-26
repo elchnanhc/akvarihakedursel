@@ -87,7 +87,7 @@
 
   <!-- Header -->
   <header class="bg-[#1b1006] text-amber-50 border-b-2 border-amber-500 sticky top-0 z-30 shadow-lg">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
       <div class="flex items-center gap-3">
         <div class="w-11 h-11 rounded-xl bg-amber-400 text-stone-950 flex items-center justify-center text-2xl border-2 border-amber-200 shadow">
           🐭
@@ -95,17 +95,25 @@
         <div>
           <h1 class="text-xl sm:text-2xl font-black tracking-tight text-amber-300">מאורת העכברים</h1>
           <p class="text-amber-100/75 text-xs sm:text-sm">
-            ניתוח הפרשי ניצחון (Margin of Victory) ב-<span id="headerLeagueCount" class="font-bold text-amber-400">13</span> ליגות לאורך 11 עונות (16/17 – *26/27)
+            ניתוח הפרשי ניצחון (Margin of Victory) ב-<span id="headerLeagueCount" class="font-bold text-amber-400">13</span> ליגות • טווח שינוי פעיל: <span id="headerRangeLabel" class="font-bold text-amber-300">16/17 ← *26/27</span>
           </p>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2.5">
-        <label class="inline-flex items-center gap-2 bg-[#2b1a0b] hover:bg-[#382310] text-amber-100 px-3.5 py-2 rounded-xl text-xs sm:text-sm cursor-pointer border border-amber-700/60">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex items-center gap-1.5 bg-[#2b1a0b] text-amber-100 px-3 py-1.5 rounded-xl text-xs border border-amber-700/60">
+          <span class="font-bold text-amber-300">שינוי מטווח:</span>
+          <select id="rangeStartSelect" onchange="onRangeChange()" class="bg-[#1b1006] text-amber-100 border border-amber-600/60 rounded-lg px-2 py-1 font-bold"></select>
+          <span>←</span>
+          <select id="rangeEndSelect" onchange="onRangeChange()" class="bg-[#1b1006] text-amber-100 border border-amber-600/60 rounded-lg px-2 py-1 font-bold"></select>
+        </div>
+
+        <label class="inline-flex items-center gap-2 bg-[#2b1a0b] hover:bg-[#382310] text-amber-100 px-3 py-2 rounded-xl text-xs cursor-pointer border border-amber-700/60">
           <input type="checkbox" id="excludePartialSeason" class="rounded accent-amber-500" />
-          <span>עונות מלאות בלבד (16/17–25/26)</span>
+          <span>עונות מלאות בלבד</span>
         </label>
-        <button onclick="exportAllCSV()" class="bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs sm:text-sm font-extrabold px-3.5 py-2 rounded-xl border-2 border-stone-950 transition">
+
+        <button onclick="exportAllCSV()" class="bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-extrabold px-3.5 py-2 rounded-xl border-2 border-stone-950 transition">
           ייצוא CSV 🧀
         </button>
       </div>
@@ -155,9 +163,12 @@
       </div>
 
       <div class="den-card rounded-2xl overflow-hidden">
-        <div class="p-5 sm:p-6 border-b border-amber-900/20">
-          <h2 class="text-lg sm:text-xl font-black text-stone-900">דירוג הצפיפות המלא</h2>
-          <p class="text-xs sm:text-sm text-stone-600">לחץ על כותרת כל עמודה כדי למיין את הליגות</p>
+        <div class="p-5 sm:p-6 border-b border-amber-900/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-lg sm:text-xl font-black text-stone-900">דירוג הצפיפות המלא</h2>
+            <p class="text-xs sm:text-sm text-stone-600">לחץ על כותרת כל עמודה כדי למיין • עמודת השינוי מחושבת לפי הטווח שנבחר למעלה</p>
+          </div>
+          <span id="tableRangeBadge" class="text-xs font-extrabold bg-amber-200/80 text-stone-900 px-3 py-1 rounded-full self-start">טווח שינוי: 16/17 ← *26/27</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm text-right">
@@ -172,8 +183,8 @@
                 <th class="py-3.5 px-3 sortable-th" onclick="sortTable('pct10')">עד 10 נק' (%) ⇅</th>
                 <th class="py-3.5 px-3 sortable-th" onclick="sortTable('pct20')">תבוסות 20+ (%) ⇅</th>
                 <th class="py-3.5 px-3 sortable-th" onclick="sortTable('ratio')">יחס צמוד/תבוסה ⇅</th>
-                <th class="py-3.5 px-3 sortable-th" onclick="sortTable('deltaPts')">שינוי (נק') ⇅</th>
-                <th class="py-3.5 px-3 sortable-th" onclick="sortTable('delta')">שינוי (%) ⇅</th>
+                <th class="py-3.5 px-3 sortable-th" onclick="sortTable('rangeDeltaPts')">שינוי בטווח (נק') ⇅</th>
+                <th class="py-3.5 px-3 sortable-th" onclick="sortTable('rangeDeltaPct')">שינוי בטווח (%) ⇅</th>
               </tr>
             </thead>
             <tbody id="rankingTableBody" class="divide-y divide-amber-900/15"></tbody>
@@ -222,8 +233,8 @@
       <div class="den-card p-5 sm:p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 class="text-lg sm:text-xl font-black text-stone-900">כמה השתנה ההפרש הממוצע לאורך התקופה?</h2>
-            <p class="text-xs sm:text-sm text-stone-600">השוואה בין העונה האחרונה בתקופה הנבחרת לעונת הפתיחה (16/17) — באדום ליגות שהתרחבו, בירוק ליגות שהצטופפו</p>
+            <h2 id="deltaChartTitle" class="text-lg sm:text-xl font-black text-stone-900">שינוי בהפרש הממוצע בטווח הנבחר (16/17 ← *26/27)</h2>
+            <p class="text-xs sm:text-sm text-stone-600">באדום ליגות שבהן ההפרש עלה בטווח שבחרת, בירוק ליגות שבהן ההפרש ירד (הפכו צמודות יותר)</p>
           </div>
           <div class="inline-flex rounded-xl border-2 border-stone-800/30 bg-white/70 p-1 self-start">
             <button type="button" id="btnDeltaPts" onclick="setDeltaChartMode('pts')" class="delta-mode-btn active px-3 py-1 rounded-lg text-xs font-extrabold transition">
@@ -253,8 +264,8 @@
       <!-- Deep Metrics Table -->
       <div class="den-card rounded-2xl overflow-hidden">
         <div class="p-5 sm:p-6 border-b border-amber-900/20">
-          <h2 class="text-lg sm:text-xl font-black text-stone-900">מדדי עומק לפי ליגה: יחס דרמה/תבוסה, שינוי בנקודות ותנודתיות</h2>
-          <p class="text-xs sm:text-sm text-stone-600">כולל שינוי בנקודות (הפרש אחרון פחות 16/17), טווח תנודתיות בעשור, וקצב העונה הנוכחית (*26/27) מול הממוצע ההיסטורי</p>
+          <h2 class="text-lg sm:text-xl font-black text-stone-900">מדדי עומק לפי ליגה: יחס דרמה/תבוסה, שינוי בטווח ותנודתיות</h2>
+          <p class="text-xs sm:text-sm text-stone-600">כולל שינוי בין העונות שבחרת בבורר הטווח, טווח תנודתיות בעשור, וקצב העונה הנוכחית (*26/27) מול הממוצע ההיסטורי</p>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm text-right">
@@ -262,7 +273,7 @@
               <tr>
                 <th class="py-3.5 px-4">ליגה</th>
                 <th class="py-3.5 px-4">יחס צמוד/תבוסה</th>
-                <th class="py-3.5 px-4">שינוי (נק' / %)</th>
+                <th class="py-3.5 px-4">שינוי בטווח (נק' / %)</th>
                 <th class="py-3.5 px-4">העונה הכי צמודה</th>
                 <th class="py-3.5 px-4">העונה הכי פתוחה</th>
                 <th class="py-3.5 px-4">טווח תנודתיות</th>
@@ -365,12 +376,15 @@
       aba:        { flag: '',     color: '#4f46e5' }
     };
 
+    const ALL_SEASON_LABELS = ["16/17", "17/18", "18/19", "19/20", "20/21", "21/22", "22/23", "23/24", "24/25", "25/26", "*26/27"];
     const FALLBACK_COLORS = ['#2563eb', '#ea580c', '#059669', '#7c3aed', '#dc2626', '#0891b2', '#db2777'];
     const EARLY_SEASONS = new Set(['16/17', '17/18', '18/19', '19/20', '20/21']);
     const LATE_SEASONS = new Set(['21/22', '22/23', '23/24', '24/25', '25/26']);
 
     let RAW_DATA = [];
     let selectedLeagueIds = new Set(['israel', 'euroleague', 'nba', 'spain']);
+    let rangeStart = '16/17';
+    let rangeEnd = '*26/27';
     let sortKey = 'avg';
     let sortAsc = true;
     let deltaChartMode = 'pts';
@@ -396,6 +410,7 @@
           RAW_DATA.slice(0, 4).forEach(l => selectedLeagueIds.add(l.id));
         }
 
+        populateRangeSelects();
         populateSelect();
         renderChips();
         renderAll();
@@ -406,6 +421,49 @@
         banner.textContent = 'שגיאה בטעינת הנתונים: ' + err.message;
         console.error(err);
       }
+    }
+
+    function getActiveSeasonLabels() {
+      const excludePartial = document.getElementById('excludePartialSeason').checked;
+      return excludePartial ? ALL_SEASON_LABELS.filter(s => !s.startsWith('*')) : ALL_SEASON_LABELS;
+    }
+
+    function populateRangeSelects() {
+      const labels = getActiveSeasonLabels();
+      const startSel = document.getElementById('rangeStartSelect');
+      const endSel = document.getElementById('rangeEndSelect');
+
+      if (!labels.includes(rangeStart)) rangeStart = labels[0] || '16/17';
+      if (!labels.includes(rangeEnd)) rangeEnd = labels[labels.length - 1] || '25/26';
+
+      startSel.innerHTML = labels.map(l => `<option value="${l}" ${l === rangeStart ? 'selected' : ''}>${l}</option>`).join('');
+      endSel.innerHTML = labels.map(l => `<option value="${l}" ${l === rangeEnd ? 'selected' : ''}>${l}</option>`).join('');
+      updateRangeLabels();
+    }
+
+    function onRangeChange() {
+      const labels = getActiveSeasonLabels();
+      let s = document.getElementById('rangeStartSelect').value;
+      let e = document.getElementById('rangeEndSelect').value;
+      if (labels.indexOf(s) > labels.indexOf(e)) {
+        const tmp = s;
+        s = e;
+        e = tmp;
+        document.getElementById('rangeStartSelect').value = s;
+        document.getElementById('rangeEndSelect').value = e;
+      }
+      rangeStart = s;
+      rangeEnd = e;
+      updateRangeLabels();
+      renderAll();
+    }
+
+    function updateRangeLabels() {
+      const text = `${rangeStart} ← ${rangeEnd}`;
+      document.getElementById('headerRangeLabel').textContent = text;
+      document.getElementById('tableRangeBadge').textContent = `טווח שינוי: ${text}`;
+      const titleEl = document.getElementById('deltaChartTitle');
+      if (titleEl) titleEl.textContent = `שינוי בהפרש הממוצע בטווח הנבחר (${text})`;
     }
 
     function getFilteredSeasons(seasons) {
@@ -433,6 +491,7 @@
     function computeSummaries() {
       return RAW_DATA.map(lg => {
         const allSeasons = lg.seasons || [];
+        const bySeason = Object.fromEntries(allSeasons.map(s => [s.season, s]));
         const seasons = getFilteredSeasons(allSeasons);
         const totalGames = seasons.reduce((a, s) => a + (Number(s.games) || 0), 0);
         const wAvg = weightedAverage(seasons);
@@ -440,10 +499,10 @@
         const u10 = seasons.reduce((a, s) => a + (Number(s.u10) || 0), 0);
         const p20 = seasons.reduce((a, s) => a + (Number(s.p20) || 0), 0);
 
-        const firstAvg = Number(seasons[0]?.avg) || 0;
-        const lastAvg = Number(seasons[seasons.length - 1]?.avg) || 0;
-        const deltaPts = Number((lastAvg - firstAvg).toFixed(2));
-        const delta = firstAvg > 0 ? Number((((lastAvg - firstAvg) / firstAvg) * 100).toFixed(1)) : 0;
+        const startAvg = Number(bySeason[rangeStart]?.avg ?? seasons[0]?.avg ?? 0);
+        const endAvg = Number(bySeason[rangeEnd]?.avg ?? seasons[seasons.length - 1]?.avg ?? 0);
+        const rangeDeltaPts = Number((endAvg - startAvg).toFixed(2));
+        const rangeDeltaPct = startAvg > 0 ? Number((((endAvg - startAvg) / startAvg) * 100).toFixed(1)) : 0;
 
         const avg = Number(wAvg.toFixed(2));
         const pct5 = totalGames ? Number(((u5 / totalGames) * 100).toFixed(1)) : 0;
@@ -476,8 +535,10 @@
           pct10,
           pct20,
           ratio,
-          deltaPts,
-          delta,
+          startAvg,
+          endAvg,
+          rangeDeltaPts,
+          rangeDeltaPct,
           diagnosis: getDenDiagnosis(avg, pct20),
           minSeason,
           maxSeason,
@@ -516,7 +577,7 @@
       const cards = [
         { title: 'הליגה הצמודה ביותר', val: tightest.displayName, sub: `ממוצע ${tightest.avg} נק' (יחס ${tightest.ratio}:1 צמוד/תבוסה)`, tag: 'הגיל ברקיה', tagCls: 'bg-emerald-100 text-emerald-900' },
         { title: 'הפערים הגבוהים ביותר', val: widest.displayName, sub: `ממוצע ${widest.avg} נק' (${widest.pct20}% תבוסות 20+)`, tag: 'טרחות בע"מ', tagCls: 'bg-rose-100 text-rose-900' },
-        { title: 'ליגת העל הישראלית', val: `${israel.avg} נק' בממוצע`, sub: `שינוי: ${israel.deltaPts > 0 ? '+' : ''}${israel.deltaPts} נק' (${israel.delta > 0 ? '+' : ''}${israel.delta}%)`, tag: '🇮🇱 ישראל', tagCls: 'bg-amber-200/80 text-stone-900' },
+        { title: 'ליגת העל הישראלית', val: `${israel.avg} נק' בממוצע`, sub: `שינוי (${rangeStart}←${rangeEnd}): ${israel.rangeDeltaPts > 0 ? '+' : ''}${israel.rangeDeltaPts} נק' (${israel.rangeDeltaPct > 0 ? '+' : ''}${israel.rangeDeltaPct}%)`, tag: '🇮🇱 ישראל', tagCls: 'bg-amber-200/80 text-stone-900' },
         { title: 'סה"כ משחקים שנותחו', val: totalGames.toLocaleString(), sub: `ב-${summaries.length} ליגות על פני 11 עונות`, tag: 'מאגר מלא', tagCls: 'bg-stone-200 text-stone-900' }
       ];
 
@@ -534,7 +595,7 @@
 
     function sortTable(key) {
       if (sortKey === key) sortAsc = !sortAsc;
-      else { sortKey = key; sortAsc = key === 'avg' || key === 'pct20' || key === 'delta' || key === 'deltaPts'; }
+      else { sortKey = key; sortAsc = key === 'avg' || key === 'pct20' || key === 'rangeDeltaPct' || key === 'rangeDeltaPts'; }
       renderRankingTable(computeSummaries());
     }
 
@@ -558,11 +619,11 @@
           <td class="py-3.5 px-3 text-blue-800 font-bold">${s.pct10}%</td>
           <td class="py-3.5 px-3 text-rose-800 font-bold">${s.pct20}%</td>
           <td class="py-3.5 px-3 font-extrabold text-stone-800">${s.ratio}</td>
-          <td class="py-3.5 px-3 font-extrabold ${s.deltaPts > 0 ? 'text-rose-700' : 'text-emerald-700'}">
-            ${s.deltaPts > 0 ? '+' : ''}${s.deltaPts}
+          <td class="py-3.5 px-3 font-extrabold ${s.rangeDeltaPts > 0 ? 'text-rose-700' : 'text-emerald-700'}">
+            ${s.rangeDeltaPts > 0 ? '+' : ''}${s.rangeDeltaPts}
           </td>
-          <td class="py-3.5 px-3 font-extrabold ${s.delta > 0 ? 'text-rose-700' : 'text-emerald-700'}">
-            ${s.delta > 0 ? '+' : ''}${s.delta}%
+          <td class="py-3.5 px-3 font-extrabold ${s.rangeDeltaPct > 0 ? 'text-rose-700' : 'text-emerald-700'}">
+            ${s.rangeDeltaPct > 0 ? '+' : ''}${s.rangeDeltaPct}%
           </td>
         </tr>
       `).join('');
@@ -605,7 +666,7 @@
     }
 
     function renderDeltaChart(summaries) {
-      const key = deltaChartMode === 'pts' ? 'deltaPts' : 'delta';
+      const key = deltaChartMode === 'pts' ? 'rangeDeltaPts' : 'rangeDeltaPct';
       const sorted = [...summaries].sort((a, b) => b[key] - a[key]);
       if (charts.deltaChart) charts.deltaChart.destroy();
       charts.deltaChart = new Chart(document.getElementById('deltaChangeChart'), {
@@ -613,7 +674,7 @@
         data: {
           labels: sorted.map(s => s.displayName),
           datasets: [{
-            label: deltaChartMode === 'pts' ? 'שינוי בהפרש הממוצע (נקודות)' : 'שינוי בהפרש הממוצע (%)',
+            label: deltaChartMode === 'pts' ? `שינוי בנקודות (${rangeStart} ← ${rangeEnd})` : `שינוי באחוזים (${rangeStart} ← ${rangeEnd})`,
             data: sorted.map(s => s[key]),
             backgroundColor: sorted.map(s => s.id === 'israel' ? '#f59e0b' : (s[key] >= 0 ? '#dc2626' : '#059669')),
             borderRadius: 5
@@ -627,7 +688,7 @@
             y: {
               title: {
                 display: true,
-                text: deltaChartMode === 'pts' ? 'שינוי בנקודות (לעומת 16/17)' : 'שינוי באחוזים (לעומת 16/17)'
+                text: deltaChartMode === 'pts' ? `שינוי בנקודות (${rangeStart} ← ${rangeEnd})` : `שינוי באחוזים (${rangeStart} ← ${rangeEnd})`
               }
             }
           }
@@ -695,8 +756,8 @@
         <tr class="hover:bg-amber-900/5 ${s.id === 'israel' ? 'bg-amber-300/25 font-bold' : ''}">
           <td class="py-3.5 px-4 font-extrabold text-stone-950 whitespace-nowrap">${s.displayName}</td>
           <td class="py-3.5 px-4 font-black text-stone-950">${s.ratio} <span class="text-xs font-normal text-stone-500">ל-1</span></td>
-          <td class="py-3.5 px-4 font-extrabold ${s.deltaPts > 0 ? 'text-rose-700' : 'text-emerald-700'}">
-            ${s.deltaPts > 0 ? '+' : ''}${s.deltaPts} נק' (${s.delta > 0 ? '+' : ''}${s.delta}%)
+          <td class="py-3.5 px-4 font-extrabold ${s.rangeDeltaPts > 0 ? 'text-rose-700' : 'text-emerald-700'}">
+            ${s.rangeDeltaPts > 0 ? '+' : ''}${s.rangeDeltaPts} נק' (${s.rangeDeltaPct > 0 ? '+' : ''}${s.rangeDeltaPct}%)
           </td>
           <td class="py-3.5 px-4 text-emerald-800 font-bold">${s.minSeason.season} (${s.minSeason.avg})</td>
           <td class="py-3.5 px-4 text-rose-800 font-bold">${s.maxSeason.season} (${s.maxSeason.avg})</td>
@@ -745,9 +806,7 @@
     }
 
     function renderTrendsChart() {
-      const allSeasonLabels = ["16/17", "17/18", "18/19", "19/20", "20/21", "21/22", "22/23", "23/24", "24/25", "25/26", "*26/27"];
-      const excludePartial = document.getElementById('excludePartialSeason').checked;
-      const labels = excludePartial ? allSeasonLabels.filter(s => !s.startsWith('*')) : allSeasonLabels;
+      const labels = getActiveSeasonLabels();
 
       const datasets = RAW_DATA.filter(lg => selectedLeagueIds.has(lg.id)).map(lg => {
         const map = Object.fromEntries((lg.seasons || []).map(s => [s.season, s.avg]));
@@ -926,7 +985,11 @@
       });
     });
 
-    document.getElementById('excludePartialSeason').addEventListener('change', renderAll);
+    document.getElementById('excludePartialSeason').addEventListener('change', () => {
+      populateRangeSelects();
+      renderAll();
+    });
+
     init();
   </script>
 </body>
