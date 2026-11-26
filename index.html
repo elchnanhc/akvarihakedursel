@@ -67,6 +67,12 @@
       border-color: #fbbf24;
     }
 
+    .delta-mode-btn.active {
+      background-color: #241609;
+      color: #fbbf24;
+      border-color: #241609;
+    }
+
     .sortable-th {
       cursor: pointer;
       user-select: none;
@@ -212,6 +218,28 @@
     <section id="tab-insights" class="tab-panel hidden space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="extremeRecordsGrid"></div>
 
+      <!-- Delta Change Chart (Points vs Percent) -->
+      <div class="den-card p-5 sm:p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-lg sm:text-xl font-black text-stone-900">כמה השתנה ההפרש הממוצע לאורך התקופה?</h2>
+            <p class="text-xs sm:text-sm text-stone-600">השוואה בין העונה האחרונה בתקופה הנבחרת לעונת הפתיחה (16/17) — באדום ליגות שהתרחבו, בירוק ליגות שהצטופפו</p>
+          </div>
+          <div class="inline-flex rounded-xl border-2 border-stone-800/30 bg-white/70 p-1 self-start">
+            <button type="button" id="btnDeltaPts" onclick="setDeltaChartMode('pts')" class="delta-mode-btn active px-3 py-1 rounded-lg text-xs font-extrabold transition">
+              שינוי בנקודות
+            </button>
+            <button type="button" id="btnDeltaPct" onclick="setDeltaChartMode('pct')" class="delta-mode-btn px-3 py-1 rounded-lg text-xs font-extrabold text-stone-800 transition">
+              שינוי באחוזים (%)
+            </button>
+          </div>
+        </div>
+        <div class="h-80" dir="ltr">
+          <canvas id="deltaChangeChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Half-Decade Comparison Chart -->
       <div class="den-card p-5 sm:p-6 rounded-2xl">
         <div class="mb-4">
           <h2 class="text-lg sm:text-xl font-black text-stone-900">חצי ראשון של העשור (16/17–20/21) מול חצי שני (21/22–25/26)</h2>
@@ -222,6 +250,7 @@
         </div>
       </div>
 
+      <!-- Deep Metrics Table -->
       <div class="den-card rounded-2xl overflow-hidden">
         <div class="p-5 sm:p-6 border-b border-amber-900/20">
           <h2 class="text-lg sm:text-xl font-black text-stone-900">מדדי עומק לפי ליגה: יחס דרמה/תבוסה, שינוי בנקודות ותנודתיות</h2>
@@ -344,6 +373,7 @@
     let selectedLeagueIds = new Set(['israel', 'euroleague', 'nba', 'spain']);
     let sortKey = 'avg';
     let sortAsc = true;
+    let deltaChartMode = 'pts';
     let charts = {};
 
     async function init() {
@@ -565,6 +595,46 @@
       });
     }
 
+    function setDeltaChartMode(mode) {
+      deltaChartMode = mode;
+      document.getElementById('btnDeltaPts').classList.toggle('active', mode === 'pts');
+      document.getElementById('btnDeltaPts').classList.toggle('text-stone-800', mode !== 'pts');
+      document.getElementById('btnDeltaPct').classList.toggle('active', mode === 'pct');
+      document.getElementById('btnDeltaPct').classList.toggle('text-stone-800', mode !== 'pct');
+      renderDeltaChart(computeSummaries());
+    }
+
+    function renderDeltaChart(summaries) {
+      const key = deltaChartMode === 'pts' ? 'deltaPts' : 'delta';
+      const sorted = [...summaries].sort((a, b) => b[key] - a[key]);
+      if (charts.deltaChart) charts.deltaChart.destroy();
+      charts.deltaChart = new Chart(document.getElementById('deltaChangeChart'), {
+        type: 'bar',
+        data: {
+          labels: sorted.map(s => s.displayName),
+          datasets: [{
+            label: deltaChartMode === 'pts' ? 'שינוי בהפרש הממוצע (נקודות)' : 'שינוי בהפרש הממוצע (%)',
+            data: sorted.map(s => s[key]),
+            backgroundColor: sorted.map(s => s.id === 'israel' ? '#f59e0b' : (s[key] >= 0 ? '#dc2626' : '#059669')),
+            borderRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: deltaChartMode === 'pts' ? 'שינוי בנקודות (לעומת 16/17)' : 'שינוי באחוזים (לעומת 16/17)'
+              }
+            }
+          }
+        }
+      });
+    }
+
     function renderDeepInsights(summaries) {
       let tightestSeason = null;
       let widestSeason = null;
@@ -599,6 +669,8 @@
           <div class="text-sm font-bold text-stone-700 mt-1">הכי תנודתית: ${mostVolatile?.displayName} (טווח ${mostVolatile?.swing} נק')</div>
         </div>
       `;
+
+      renderDeltaChart(summaries);
 
       const byEraDiff = [...summaries].sort((a, b) => b.eraDiffPct - a.eraDiffPct);
       if (charts.eraChart) charts.eraChart.destroy();
